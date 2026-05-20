@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #f5f4f1;
+    --surface: #ffffff;
+    --border: #e2dfd8;
+    --accent: #b07d3a;
+    --accent2: #5b52d4;
+    --text: #1a1814;
+    --muted: #9a9488;
+    --white: #ffffff;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(176,125,58,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(91,82,212,0.05) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ---- HEADER ---- */
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 48px 24px 32px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(245,244,241,0.97) 0%, transparent 100%);
+    backdrop-filter: blur(12px);
+    animation: fadeDown 0.8s ease both;
+  }
+
+  header .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.4rem, 8vw, 4.5rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--text) 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  header .subtitle {
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+  }
+
+  /* ---- TOOLBAR ---- */
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(245,244,241,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    animation: fadeDown 0.8s 0.2s ease both;
+  }
+
+  .count-badge {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-right: auto;
+  }
+
+  .count-badge span { color: var(--accent); font-weight: 400; }
+
+  .layout-btns {
+    display: flex;
+    gap: 4px;
+  }
+
+  .layout-btn {
+    width: 32px; height: 32px;
+    border: 1px solid var(--border);
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all 0.2s;
+    color: var(--muted);
+  }
+  .layout-btn:hover, .layout-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(200,169,110,0.06);
+  }
+
+  .layout-btn svg { width: 14px; height: 14px; }
+
+  /* ---- GRID ---- */
+  .gallery-wrap {
+    position: relative;
+    z-index: 1;
+    padding: 24px 16px 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    transition: all 0.4s ease;
+  }
+
+  .grid.layout-2 { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .grid.layout-3 { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .grid.layout-4 { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .grid.layout-masonry { columns: 2; column-gap: 8px; }
+
+  @media(min-width: 480px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    .grid.layout-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid.layout-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid.layout-4 { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  @media(min-width: 768px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  }
+
+  /* ---- CARD ---- */
+  .card {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    aspect-ratio: 1;
+    transform: translateY(30px);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.35s ease, box-shadow 0.3s;
+  }
+
+  .grid.layout-masonry .card {
+    aspect-ratio: unset;
+    break-inside: avoid;
+    margin-bottom: 8px;
+  }
+
+  .card.visible { transform: translateY(0); opacity: 1; }
+
+  .card:hover {
+    box-shadow: 0 8px 28px rgba(0,0,0,0.13), 0 0 0 1px var(--accent);
+    z-index: 2;
+  }
+
+  .card img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s cubic-bezier(0.22,1,0.36,1);
+  }
+
+  .grid.layout-masonry .card img { height: auto; }
+
+  .card:hover img { transform: scale(1.06); }
+
+  /* Hover overlay */
+  .card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.85) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 14px;
+    gap: 8px;
+  }
+
+  .card:hover .card-overlay,
+  .card.touch-active .card-overlay {
+    opacity: 1;
+  }
+
+  .card-name {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn-view, .btn-dl {
+    flex: 1;
+    padding: 7px 0;
+    border: none;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 400;
+  }
+
+  .btn-view {
+    background: rgba(255,255,255,0.12);
+    color: var(--white);
+    backdrop-filter: blur(8px);
+  }
+  .btn-view:hover { background: rgba(255,255,255,0.22); }
+
+  .btn-dl {
+    background: var(--accent);
+    color: #0a0a0c;
+  }
+  .btn-dl:hover { background: #d4b87a; transform: scale(1.03); }
+
+  /* ---- LIGHTBOX ---- */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .lightbox.open {
+    pointer-events: all;
+    opacity: 1;
+  }
+
+  .lb-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(240,238,234,0.96);
+    backdrop-filter: blur(24px);
+  }
+
+  .lb-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 60px 16px 100px;
+    gap: 0;
+  }
+
+  .lb-img-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .lb-img-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    transform: scale(0.88);
+    opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.22,1,0.36,1), opacity 0.35s ease;
+  }
+
+  .lightbox.open .lb-img-wrap img {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  /* Bottom bar */
+  .lb-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 16px 20px 28px;
+    background: linear-gradient(0deg, rgba(240,238,234,0.98) 60%, transparent 100%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 2;
+  }
+
+  .lb-filename {
+    flex: 1;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .lb-counter {
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .lb-dl-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: var(--accent);
+    color: #0a0a0c;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-weight: 400;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .lb-dl-btn:hover { background: #d4b87a; transform: scale(1.04); }
+  .lb-dl-btn svg { width: 12px; height: 12px; }
+
+  /* Nav arrows */
+  .lb-nav {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+  .lb-nav:hover { border-color: var(--accent); color: var(--accent); }
+  .lb-nav.prev { left: 10px; }
+  .lb-nav.next { right: 10px; }
+  .lb-nav svg { width: 18px; height: 18px; }
+
+  /* Close */
+  .lb-close {
+    position: fixed;
+    top: 14px; right: 14px;
+    z-index: 3;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+  .lb-close:hover { border-color: #ff5a5a; color: #ff5a5a; }
+  .lb-close svg { width: 16px; height: 16px; }
+
+  /* ---- ANIMATIONS ---- */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Shimmer skeleton */
+  .card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s infinite;
+  }
+  .card img.loaded + .card::after, .card.loaded::after { display: none; }
+
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+  }
+
+  /* Swipe hint on mobile */
+  .swipe-hint {
+    position: fixed;
+    bottom: 90px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    opacity: 0;
+    animation: hintFade 2.5s 1s ease both;
+    z-index: 3;
+    pointer-events: none;
+  }
+  @keyframes hintFade {
+    0%   { opacity: 0; }
+    30%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Pulse dot for download confirmation */
+  @keyframes pulse-ring {
+    0%   { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 80px 24px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Swimming</p>
+  <h1>Gallery</h1>
+  <p class="subtitle" id="headerDate">Loading…</p>
+</header>
+
+<div class="toolbar">
+  <span class="count-badge"><span id="countLabel">0</span> photos</span>
+  <div class="layout-btns">
+    <button class="layout-btn active" id="btn2" title="2 columns" onclick="setLayout(2)">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="1" y="1" width="5" height="12" rx="1"/><rect x="8" y="1" width="5" height="12" rx="1"/>
+      </svg>
+    </button>
+    <button class="layout-btn" id="btn3" title="3 columns" onclick="setLayout(3)">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="1" y="1" width="3" height="12" rx="1"/><rect x="5.5" y="1" width="3" height="12" rx="1"/><rect x="10" y="1" width="3" height="12" rx="1"/>
+      </svg>
+    </button>
+    <button class="layout-btn" id="btn4" title="4 columns" onclick="setLayout(4)">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="1" y="1" width="2" height="12" rx="1"/><rect x="4.3" y="1" width="2" height="12" rx="1"/><rect x="7.7" y="1" width="2" height="12" rx="1"/><rect x="11" y="1" width="2" height="12" rx="1"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div class="gallery-wrap">
+  <div class="grid layout-2" id="grid"></div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+  <div class="lb-backdrop" onclick="closeLightbox()"></div>
+  <div class="lb-content">
+    <div class="lb-img-wrap">
+      <img id="lbImg" src="" alt=""/>
+    </div>
+  </div>
+
+  <button class="lb-close" onclick="closeLightbox()" title="Close (Esc)">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+      <line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/>
+    </svg>
+  </button>
+
+  <button class="lb-nav prev" id="lbPrev" onclick="navigate(-1)" title="Previous">
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8">
+      <polyline points="11,4 6,9 11,14"/>
+    </svg>
+  </button>
+
+  <button class="lb-nav next" id="lbNext" onclick="navigate(1)" title="Next">
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8">
+      <polyline points="7,4 12,9 7,14"/>
+    </svg>
+  </button>
+
+  <div class="lb-bar">
+    <span class="lb-filename" id="lbName"></span>
+    <span class="lb-counter" id="lbCounter"></span>
+    <button class="lb-dl-btn" id="lbDlBtn" onclick="downloadCurrent()">
+      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8">
+        <line x1="6" y1="1" x2="6" y2="8"/><polyline points="3,5.5 6,8.5 9,5.5"/>
+        <line x1="1.5" y1="11" x2="10.5" y2="11"/>
+      </svg>
+      Download
+    </button>
+  </div>
+
+  <span class="swipe-hint" id="swipeHint">← swipe to navigate →</span>
+</div>
+
+<script>
+// ── Image list ──────────────────────────────────────────────────────────────
+const IMAGES = [
+  "3270.jpg","3337.jpg","3338.jpg","3397.jpg",
+  "downloaded_image.png (1).jpg","downloaded_image.png (2).jpg","downloaded_image.png.jpg",
+  "IMG_20260520_052213.jpg","IMG_20260520_052225.jpg","IMG_20260520_052233.jpg","IMG_20260520_052242.jpg",
+  "IMG_20260520_052245.jpg","IMG_20260520_052343.jpg","IMG_20260520_052346.jpg","IMG_20260520_052348.jpg",
+  "IMG_20260520_052408.jpg","IMG_20260520_052412.jpg","IMG_20260520_052414.jpg","IMG_20260520_052433.jpg",
+  "IMG_20260520_052442.jpg","IMG_20260520_052445.jpg","IMG_20260520_052501.jpg","IMG_20260520_052503.jpg",
+  "IMG_20260520_052519.jpg","IMG_20260520_052521.jpg","IMG_20260520_052524.jpg","IMG_20260520_052532.jpg",
+  "IMG_20260520_052534.jpg","IMG_20260520_052537.jpg","IMG_20260520_052540.jpg","IMG_20260520_052621.jpg",
+  "IMG_20260520_052625.jpg","IMG_20260520_052635.jpg","IMG_20260520_052639.jpg","IMG_20260520_052658.jpg",
+  "IMG_20260520_052711.jpg","IMG_20260520_052721.jpg","IMG_20260520_052724.jpg","IMG_20260520_052727.jpg",
+  "IMG_20260520_052728.jpg","IMG_20260520_052756.jpg","IMG_20260520_052801.jpg","IMG_20260520_052806.jpg",
+  "IMG_20260520_052809.jpg","IMG_20260520_052818.jpg","IMG_20260520_052829.jpg","IMG_20260520_052836.jpg",
+  "IMG_20260520_052839.jpg","IMG_20260520_052905.jpg","IMG_20260520_052909.jpg","IMG_20260520_052913.jpg",
+  "IMG_20260520_052920.jpg","IMG_20260520_052923.jpg","IMG_20260520_052926.jpg","IMG_20260520_053004.jpg",
+  "IMG_20260520_053006.jpg","IMG_20260520_053021.jpg","IMG_20260520_053023.jpg","IMG_20260520_053042.jpg",
+  "IMG_20260520_053045.jpg","IMG_20260520_053049.jpg","IMG_20260520_053242.jpg","IMG_20260520_053302.jpg",
+  "IMG_20260520_053310.jpg","IMG_20260520_053314.jpg","IMG_20260520_053328.jpg","IMG_20260520_053334.jpg",
+  "IMG_20260520_053339.jpg","IMG_20260520_053341.jpg","IMG_20260520_053343.jpg","IMG_20260520_053518.jpg",
+  "IMG_20260520_053520.jpg","IMG_20260520_053538.jpg","IMG_20260520_053551.jpg","IMG_20260520_053558.jpg",
+  "IMG_20260520_053559.jpg","IMG_20260520_053625.jpg","IMG_20260520_053627.jpg","IMG_20260520_053707.jpg",
+  "IMG_20260520_053718.jpg","IMG_20260520_053857.jpg","IMG_20260520_053906.jpg","IMG_20260520_053908.jpg",
+  "IMG_20260520_053913.jpg","IMG_20260520_053914.jpg","IMG_20260520_053938.jpg","IMG_20260520_053941.jpg",
+  "IMG_20260520_053945.jpg","IMG_20260520_053947.jpg","IMG_20260520_053954.jpg","IMG_20260520_054007.jpg",
+  "IMG_20260520_054011.jpg","IMG_20260520_054145.jpg","IMG_20260520_054147.jpg","IMG_20260520_054152.jpg",
+  "IMG_20260520_054155.jpg","IMG_20260520_054204.jpg","IMG_20260520_054206.jpg","IMG_20260520_054209.jpg",
+  "IMG_20260520_054217.jpg","IMG_20260520_054221.jpg","IMG_20260520_054229.jpg","IMG_20260520_054231.jpg",
+  "IMG_20260520_054241.jpg","IMG_20260520_054243.jpg","IMG_20260520_054248.jpg","IMG_20260520_054320.jpg",
+  "IMG_20260520_054328.jpg","IMG_20260520_054334.jpg","IMG_20260520_054336.jpg","IMG_20260520_054354.jpg",
+  "IMG_20260520_054356.jpg","IMG_20260520_054406.jpg","IMG_20260520_054410.jpg","IMG_20260520_054412.jpg",
+  "IMG_20260520_054418.jpg","IMG_20260520_054421.jpg","IMG_20260520_054436.jpg","IMG_20260520_054442.jpg",
+  "IMG_20260520_054445.jpg","IMG_20260520_054452.jpg","IMG_20260520_054511.jpg","IMG_20260520_054514.jpg",
+  "IMG_20260520_054520.jpg","IMG_20260520_054523.jpg","IMG_20260520_054529.jpg","IMG_20260520_054533.jpg",
+  "IMG_20260520_054716.jpg","IMG_20260520_054725.jpg","IMG_20260520_054727.jpg","IMG_20260520_054730.jpg",
+  "IMG_20260520_054745.jpg","IMG_20260520_054747.jpg","IMG_20260520_054751.jpg","IMG_20260520_054823.jpg",
+  "IMG_20260520_054825.jpg","IMG_20260520_054826.jpg","IMG_20260520_054830.jpg","IMG_20260520_054831.jpg",
+  "IMG_20260520_054833.jpg","IMG_20260520_054834.jpg","IMG_20260520_054843.jpg","IMG_20260520_054845.jpg",
+  "IMG_20260520_054847.jpg","IMG_20260520_054854.jpg","IMG_20260520_054901.jpg","IMG_20260520_054904.jpg",
+  "IMG_20260520_054909.jpg","IMG_20260520_054912.jpg","IMG_20260520_054920.jpg","IMG_20260520_054923.jpg",
+  "IMG_20260520_054926.jpg","IMG_20260520_054930.jpg","IMG_20260520_054933.jpg","IMG_20260520_054937.jpg",
+  "IMG_20260520_054938.jpg","IMG_20260520_054940.jpg","IMG_20260520_055015.jpg","IMG_20260520_055016.jpg",
+  "IMG_20260520_055019.jpg","IMG_20260520_055022.jpg","IMG_20260520_055025.jpg","IMG_20260520_055031.jpg",
+  "IMG_20260520_055033.jpg","IMG_20260520_055037.jpg","IMG_20260520_055051.jpg","IMG_20260520_055053.jpg",
+  "IMG_20260520_055055.jpg","IMG_20260520_055100.jpg","IMG_20260520_055103.jpg","IMG_20260520_055131.jpg",
+  "IMG_20260520_055135.jpg","IMG_20260520_055140.jpg","IMG_20260520_055144.jpg","IMG_20260520_055146.jpg",
+  "IMG_20260520_055153.jpg","IMG_20260520_055203.jpg","IMG_20260520_055206.jpg","IMG_20260520_055210.jpg",
+  "IMG_20260520_055244.jpg","IMG_20260520_055247.jpg","IMG_20260520_055305.jpg","IMG_20260520_055312.jpg",
+  "IMG_20260520_055314.jpg","IMG_20260520_055319.jpg","IMG_20260520_055322.jpg","IMG_20260520_055330.jpg",
+  "IMG_20260520_055332.jpg","IMG_20260520_055334.jpg","IMG_20260520_055343.jpg","IMG_20260520_055347.jpg",
+  "IMG_20260520_055350.jpg","IMG_20260520_055357.jpg","IMG_20260520_055359.jpg","IMG_20260520_055410.jpg",
+  "IMG_20260520_055412.jpg","IMG_20260520_055417.jpg","IMG_20260520_055419.jpg","IMG_20260520_055430.jpg",
+  "IMG_20260520_055432.jpg","IMG_20260520_055437.jpg","IMG_20260520_055440.jpg","IMG_20260520_055444.jpg",
+  "IMG_20260520_055450.jpg","IMG_20260520_055455.jpg","IMG_20260520_055458.jpg","IMG_20260520_055501.jpg",
+  "IMG_20260520_055502.jpg","IMG_20260520_055527.jpg","IMG_20260520_055530.jpg","IMG_20260520_055532.jpg",
+  "IMG_20260520_055535.jpg","IMG_20260520_055537.jpg","IMG_20260520_055540.jpg","IMG_20260520_055545.jpg",
+  "IMG_20260520_055547.jpg","IMG_20260520_055549.jpg","IMG_20260520_055559.jpg","IMG_20260520_055559_1.jpg",
+  "IMG_20260520_055606.jpg","IMG_20260520_055642.jpg","IMG_20260520_055653.jpg","IMG_20260520_055655.jpg",
+  "IMG_20260520_055700.jpg","IMG_20260520_055703.jpg","IMG_20260520_055704.jpg","IMG_20260520_055707.jpg",
+  "IMG_20260520_055717.jpg","IMG_20260520_055717_1.jpg","IMG_20260520_055723.jpg","IMG_20260520_055726.jpg",
+  "IMG_20260520_055728.jpg","IMG_20260520_055731.jpg","IMG_20260520_055757.jpg","IMG_20260520_055802.jpg",
+  "IMG_20260520_055803.jpg","IMG_20260520_055809.jpg","IMG_20260520_055811.jpg","IMG_20260520_055817.jpg",
+  "IMG_20260520_055821.jpg","IMG_20260520_055825.jpg","IMG_20260520_055833.jpg","IMG_20260520_055837.jpg",
+  "IMG_20260520_055839.jpg","IMG_20260520_060033.jpg","IMG_20260520_060038.jpg","IMG_20260520_060044.jpg",
+  "IMG_20260520_060047.jpg","IMG_20260520_060048.jpg","IMG_20260520_060117.jpg","IMG_20260520_060119.jpg",
+  "IMG_20260520_060123.jpg","IMG_20260520_060125.jpg","IMG_20260520_060127.jpg","IMG_20260520_060134.jpg",
+  "IMG_20260520_060146.jpg","IMG_20260520_060149.jpg","IMG_20260520_060206.jpg","IMG_20260520_060211.jpg",
+  "IMG_20260520_060213.jpg","IMG_20260520_060216.jpg","IMG_20260520_060221.jpg","IMG_20260520_060223.jpg",
+  "IMG_20260520_060230.jpg","IMG_20260520_060232.jpg","IMG_20260520_060236.jpg","IMG_20260520_060238.jpg",
+  "IMG_20260520_060444.jpg","IMG_20260520_060445.jpg","IMG_20260520_060455.jpg","IMG_20260520_060456.jpg",
+  "IMG_20260520_060510.jpg","IMG_20260520_060513.jpg","IMG_20260520_060514.jpg","IMG_20260520_060516.jpg",
+  "IMG_20260520_060527.jpg","IMG_20260520_060529.jpg","IMG_20260520_060534.jpg","IMG_20260520_060726.jpg",
+  "IMG_20260520_060728.jpg","IMG_20260520_060736.jpg","IMG_20260520_060738.jpg","IMG_20260520_060741.jpg",
+  "IMG_20260520_060802.jpg","IMG_20260520_060938.jpg","IMG_20260520_060958.jpg","IMG_20260520_061001.jpg",
+  "IMG_20260520_061003.jpg","IMG_20260520_061020.jpg","IMG_20260520_061031.jpg","IMG_20260520_061033.jpg",
+  "IMG_20260520_061043.jpg","IMG_20260520_061046.jpg","IMG_20260520_061048.jpg","IMG_20260520_061104.jpg",
+  "IMG_20260520_061106.jpg","IMG_20260520_061117.jpg","IMG_20260520_061118.jpg","IMG_20260520_061123.jpg",
+  "IMG_20260520_061129.jpg","IMG_20260520_061132.jpg","IMG_20260520_061147.jpg","IMG_20260520_061148.jpg",
+  "IMG_20260520_061150.jpg","IMG_20260520_061157.jpg","IMG_20260520_061218.jpg","IMG_20260520_061223.jpg",
+  "IMG_20260520_061228.jpg","IMG_20260520_061231.jpg","IMG_20260520_061235.jpg","IMG_20260520_061307.jpg",
+  "IMG_20260520_061314.jpg","IMG_20260520_061317.jpg","IMG_20260520_061319.jpg","IMG_20260520_061321.jpg",
+  "IMG_20260520_061326.jpg","IMG_20260520_061330.jpg","IMG_20260520_061336.jpg","IMG_20260520_061425.jpg",
+  "IMG_20260520_061429.jpg","IMG_20260520_061434.jpg","IMG_20260520_061436.jpg","IMG_20260520_061500.jpg",
+  "IMG_20260520_061501.jpg","IMG_20260520_061504.jpg","IMG_20260520_061506.jpg","IMG_20260520_061511.jpg",
+  "IMG_20260520_061517.jpg","IMG_20260520_061519.jpg","IMG_20260520_061524.jpg","IMG_20260520_061526.jpg",
+  "IMG_20260520_061545.jpg","IMG_20260520_061547.jpg","IMG_20260520_061549.jpg","IMG_20260520_061550.jpg",
+  "IMG_20260520_061553.jpg","IMG_20260520_061610.jpg","IMG_20260520_061611.jpg","IMG_20260520_061613.jpg",
+  "IMG_20260520_061633.jpg","IMG_20260520_061635.jpg","IMG_20260520_061637.jpg","IMG_20260520_061642.jpg",
+  "IMG_20260520_061644.jpg","IMG_20260520_061706.jpg","IMG_20260520_061713.jpg","IMG_20260520_061714.jpg",
+  "IMG_20260520_061742.jpg","IMG_20260520_061746.jpg","IMG_20260520_061747.jpg","IMG_20260520_061752.jpg",
+  "IMG_20260520_061801.jpg","IMG_20260520_061804.jpg","IMG_20260520_061805.jpg","IMG_20260520_061810.jpg",
+  "IMG_20260520_061812.jpg","IMG_20260520_061832.jpg","IMG_20260520_061839.jpg","IMG_20260520_061841.jpg",
+  "IMG_20260520_061849.jpg","IMG_20260520_061912.jpg","IMG_20260520_061920.jpg","IMG_20260520_061923.jpg",
+  "IMG_20260520_061929.jpg","IMG_20260520_061932.jpg","IMG_20260520_061949.jpg","IMG_20260520_061957.jpg",
+  "IMG_20260520_062004.jpg","IMG_20260520_062008.jpg","IMG_20260520_062011.jpg","IMG_20260520_062014.jpg",
+  "IMG_20260520_070033.jpg","IMG_20260520_070036.jpg","IMG_20260520_070127.jpg","IMG_20260520_070210.jpg",
+  "IMG_20260520_070213.jpg","IMG_20260520_070217.jpg","IMG_20260520_070219.jpg","IMG_20260520_070238.jpg",
+  "IMG_20260520_070240.jpg","IMG_20260520_070243.jpg","IMG_20260520_070602.jpg","IMG_20260520_070629.jpg",
+  "IMG_20260520_070633.jpg","IMG_20260520_070641.jpg","IMG_20260520_070701.jpg","IMG_20260520_070704.jpg",
+  "IMG_20260520_070706.jpg","IMG_20260520_070714.jpg","IMG_20260520_070717.jpg","IMG_20260520_070918.jpg",
+  "IMG_20260520_070920.jpg","IMG_20260520_070936.jpg","IMG_20260520_070937.jpg","IMG_20260520_070939.jpg",
+  "IMG_20260520_071005.jpg","IMG_20260520_071009.jpg","IMG_20260520_071010.jpg","IMG_20260520_071046.jpg",
+  "IMG_20260520_071050.jpg","IMG_20260520_071103.jpg","IMG_20260520_071105.jpg","IMG_20260520_071108.jpg",
+  "IMG_20260520_071110.jpg","IMG_20260520_071954.jpg"
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentIndex = 0;
+let currentLayout = 2;
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.getElementById('headerDate').textContent =
+  new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+document.getElementById('countLabel').textContent = IMAGES.length;
+
+const grid = document.getElementById('grid');
+
+IMAGES.forEach((name, i) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.index = i;
+
+  const img = document.createElement('img');
+  img.loading = 'lazy';
+  img.decoding = 'async';
+  img.alt = name;
+  img.src = name; // same folder as the HTML file
+  img.addEventListener('load', () => card.classList.add('loaded'));
+
+  const overlay = document.createElement('div');
+  overlay.className = 'card-overlay';
+  overlay.innerHTML = `
+    <span class="card-name">${name}</span>
+    <div class="card-actions">
+      <button class="btn-view" data-i="${i}">View</button>
+      <button class="btn-dl" data-name="${name}">↓ Save</button>
+    </div>`;
+
+  card.appendChild(img);
+  card.appendChild(overlay);
+  grid.appendChild(card);
+
+  // Touch tap support for overlay reveal
+  card.addEventListener('touchstart', () => {
+    document.querySelectorAll('.card.touch-active').forEach(c => c.classList.remove('touch-active'));
+    card.classList.add('touch-active');
+  }, { passive: true });
+});
+
+// Stagger reveal with IntersectionObserver
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), 30);
+      io.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.05 });
+
+document.querySelectorAll('.card').forEach(c => io.observe(c));
+
+// Event delegation for card buttons
+grid.addEventListener('click', e => {
+  const viewBtn = e.target.closest('.btn-view');
+  const dlBtn   = e.target.closest('.btn-dl');
+  const card    = e.target.closest('.card');
+
+  if (viewBtn) { openLightbox(+viewBtn.dataset.i); return; }
+  if (dlBtn)   { triggerDownload(dlBtn.dataset.name); return; }
+  if (card)    { openLightbox(+card.dataset.index); }
+});
+
+// ── Layout switcher ──────────────────────────────────────────────────────────
+function setLayout(n) {
+  currentLayout = n;
+  grid.className = 'grid layout-' + n;
+  document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn' + n).classList.add('active');
+}
+
+// ── Lightbox ─────────────────────────────────────────────────────────────────
+const lb     = document.getElementById('lightbox');
+const lbImg  = document.getElementById('lbImg');
+const lbName = document.getElementById('lbName');
+const lbCnt  = document.getElementById('lbCounter');
+
+function openLightbox(i) {
+  currentIndex = i;
+  updateLightbox();
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Show swipe hint once
+  const hint = document.getElementById('swipeHint');
+  hint.style.animation = 'none';
+  void hint.offsetWidth;
+  hint.style.animation = '';
+}
+
+function closeLightbox() {
+  lb.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function updateLightbox() {
+  const name = IMAGES[currentIndex];
+  lbImg.style.opacity = '0';
+  lbImg.style.transform = 'scale(0.92)';
+  setTimeout(() => {
+    lbImg.src = name;
+    lbImg.style.opacity = '1';
+    lbImg.style.transform = 'scale(1)';
+  }, 80);
+  lbName.textContent = name;
+  lbCnt.textContent  = `${currentIndex + 1} / ${IMAGES.length}`;
+}
+
+function navigate(dir) {
+  currentIndex = (currentIndex + dir + IMAGES.length) % IMAGES.length;
+  updateLightbox();
+}
+
+// ── Download ─────────────────────────────────────────────────────────────────
+function triggerDownload(filename) {
+  const a = document.createElement('a');
+  a.href = filename;
+  a.download = filename;
+  a.click();
+}
+
+function downloadCurrent() {
+  triggerDownload(IMAGES[currentIndex]);
+
+  // Button feedback
+  const btn = document.getElementById('lbDlBtn');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '✓ Saved!';
+  btn.style.background = '#4caf82';
+  setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1800);
+}
+
+// ── Keyboard ─────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape')      closeLightbox();
+  if (e.key === 'ArrowLeft')   navigate(-1);
+  if (e.key === 'ArrowRight')  navigate(1);
+  if (e.key === 'd' || e.key === 'D') downloadCurrent();
+});
+
+// ── Touch swipe in lightbox ───────────────────────────────────────────────────
+let touchX = null;
+lb.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+lb.addEventListener('touchend', e => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 50) navigate(dx < 0 ? 1 : -1);
+  touchX = null;
+});
+</script>
+</body>
+</html>
